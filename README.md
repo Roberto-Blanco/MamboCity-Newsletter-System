@@ -11,9 +11,7 @@ The solution enables me to send bi-monthly campaigns to ~9,000 opted-in subscrib
 
 ---
 
-## 🔄 Workflow
-
-![Email Newsletter Workflow](workflow-diagram.png)
+## Workflow
 
 This outlines how the components interact during the email sending process:
 
@@ -25,7 +23,7 @@ This outlines how the components interact during the email sending process:
 
 ---
 
-## 💰 Startup Costs & Options
+## Startup Costs & Options
 
 - **Mailster License**: $199 one-time (via CodeCanyon)
   - Used for managing subscribers, list segmentation, unsubscribe links, and profile update options
@@ -35,7 +33,7 @@ This outlines how the components interact during the email sending process:
 
 ---
 
-## 🧱 Tech Stack
+## Tech Stack
 
 - WordPress (self-hosted via SiteGround)
 - Mailster (Premium plugin)
@@ -46,7 +44,7 @@ This outlines how the components interact during the email sending process:
 
 ---
 
-## ⚙️ Step-by-Step Setup
+## Step-by-Step Setup
 
 ### 1. Domain, Email & DNS Configuration
 
@@ -96,7 +94,7 @@ This outlines how the components interact during the email sending process:
 
 ---
 
-## 📈 Analytics & Deliverability
+## Analytics & Deliverability
 
 - Mailster tracks opens, clicks, unsubscribes
 - FluentSMTP logs email delivery
@@ -104,7 +102,7 @@ This outlines how the components interact during the email sending process:
 
 ---
 
-## 🧩 Challenges
+## Challenges
 
 - MAIL FROM domain MX config delayed deliverability — fixed by keeping only required MX for SES alongside Google
 - SES production access required a use-case email and took 3 days
@@ -112,7 +110,7 @@ This outlines how the components interact during the email sending process:
 
 ---
 
-## ✅ Best Practices
+## Best Practices
 
 - Use FluentSMTP for all outgoing WordPress emails
 - Include unsubscribe links in every campaign (for compliance)
@@ -121,7 +119,7 @@ This outlines how the components interact during the email sending process:
 
 ---
 
-## 📚 Resources
+## Resources
 
 - [Mailster Plugin](https://codecanyon.net/item/mailster-email-newsletter-plugin-for-wordpress/3078294)
 - [Amazon SES Docs](https://docs.aws.amazon.com/ses/latest/dg/)
@@ -130,12 +128,12 @@ This outlines how the components interact during the email sending process:
 
 ---
 
-## 📄 License
+## License
 MIT License
 
 ---
 
-## ✍️ Author
+## Author
 Robert White — [mambocity.co.uk](https://mambocity.co.uk)
 
 ---
