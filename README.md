@@ -15,7 +15,7 @@ The solution enables me to send bi-monthly campaigns to ~9,000 opted-in subscrib
 
 This outlines how the components interact during the email sending process:
 
-![Workflow Diagram](workflow-diagram.png)
+<img src="workflow-diagram.png" alt="Workflow Diagram" width="600">
 
 1. **Mailster** – user interface for campaign creation and list management
 2. **FluentSMTP** – delivery bridge that routes outgoing emails
