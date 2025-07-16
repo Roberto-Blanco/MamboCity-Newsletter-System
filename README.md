@@ -15,6 +15,8 @@ The solution enables me to send bi-monthly campaigns to ~9,000 opted-in subscrib
 
 This outlines how the components interact during the email sending process:
 
+![Workflow Diagram](workflow-diagram.png)
+
 1. **Mailster** – user interface for campaign creation and list management
 2. **FluentSMTP** – delivery bridge that routes outgoing emails
 3. **Amazon SES** – final sender that delivers the emails to recipients
