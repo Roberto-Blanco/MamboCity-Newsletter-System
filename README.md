@@ -4,19 +4,18 @@ This project documents how I set up a cost-effective, high-deliverability newsle
 
 - ✅ [Mailster](https://mailster.co/) for newsletter creation and subscriber management
 - ✅ [Amazon SES](https://aws.amazon.com/ses/) for reliable bulk email sending at near-zero cost
+- ✅ [mailster-amazonses](https://github.com/EverPress/mailster-amazonses) for automated bounce and complaint handling via SNS
 - ✅ Google Analytics via MonsterInsights for full reader behaviour tracking beyond the email
 
-The solution sends approximately monthly campaigns to ~9,000 opted-in subscribers directly from WordPress, with three independent analytics layers that outperform any commercial email platform.
+The solution sends approximately monthly campaigns to ~9,000 opted-in subscribers directly from WordPress, with automated bounce and complaint handling and three independent analytics layers that outperform any commercial email platform.
 
 ---
 
 ## Architecture
 
-Mailster connects directly to Amazon SES via IAM credentials. No intermediary SMTP bridge is required.
+Mailster connects directly to Amazon SES via IAM credentials. Bounce and complaint notifications are routed back from SES through Amazon SNS to Mailster automatically.
 
-<img src="workflow-diagram.png" alt="Workflow Diagram: Mailster creates, Amazon SES delivers" width="600">
-
-> **Mailster (Create) → Amazon SES (Deliver)**
+> **Mailster (Create) → Amazon SES (Deliver) → SNS (Notify) → Mailster (Suppress)**
 
 **Note:** FluentSMTP was used in the initial configuration as a routing bridge but was subsequently removed. Mailster now connects to SES directly via IAM credentials, which simplified the architecture and improved reliability.
 
@@ -47,7 +46,9 @@ Mailster connects directly to Amazon SES via IAM credentials. No intermediary SM
 
 - WordPress (self-hosted via SiteGround)
 - Mailster (premium plugin, $199 one-off licence)
+- mailster-amazonses v3.0.0 (EverPress add-on for SNS bounce/complaint handling)
 - Amazon Simple Email Service (SES) — eu-west-2 (London)
+- Amazon SNS — ses-bounce-v2 and ses-complaint-v2 topics
 - Google Workspace (regular inbox email, preserved alongside SES)
 - DNS and hosting managed via SiteGround
 
@@ -84,13 +85,40 @@ Mailster connects directly to Amazon SES via IAM credentials. No intermediary SM
 - Region: `eu-west-2` (London)
 - MAIL FROM domain configured: `mail.mambocity.co.uk`
 - Production access granted (50,000 emails/day, 14 per second)
+- SES Configuration Set created with event destinations for bounce and complaint events
 - Test email sent and confirmed, passing SPF and DKIM checks
 
-### 4. Integration Testing
+### 4. Automated Bounce and Complaint Handling
+
+SES bounce and complaint notifications are automatically routed back into Mailster via Amazon SNS, suppressing affected subscribers without manual intervention.
+
+**Components:**
+
+- Two SNS topics: `ses-bounce-v2` and `ses-complaint-v2`
+- SES Configuration Set with event destinations pointing to each topic
+- mailster-amazonses plugin (v3.0.0) subscribed to both topics via HTTPS endpoint
+- SNS HTTPS subscriptions with Raw message delivery disabled
+
+**What happens automatically:**
+
+- **Hard bounce** — subscriber status set to Hardbounced; address suppressed from future sends
+- **Spam complaint** — subscriber unsubscribed from all lists
+
+**Root cause resolved:** The mailster-amazonses plugin originally checked only for `notificationType` in the SNS message body, which is the field used by older SES identity-level notifications. SES Configuration Set event destinations send `eventType` instead. The plugin's `handle_sns()` method was updated to check `notificationType` first and fall back to `eventType`:
+
+```php
+switch ( isset( $message->notificationType ) ? $message->notificationType : $message->eventType ) {
+```
+
+**SES suppression list sync:** All 93 addresses previously on the SES account-level suppression list were exported via AWS CLI and imported into Mailster (73 as Hardbounced, 20 as Unsubscribed) to bring Mailster's records into alignment with SES.
+
+### 5. Integration Testing
 
 - Internal test campaign created and sent via Mailster
 - Delivery, formatting and unsubscribe links confirmed working
 - Open and click tracking confirmed active in Mailster analytics
+- Bounce handling tested using SES simulator address (bounce@simulator.amazonses.com) — subscriber automatically set to Hardbounced
+- Complaint handling confirmed via activity log — subscriber automatically unsubscribed
 - Scaled up to full list send after successful tests
 
 ---
@@ -119,17 +147,16 @@ This system delivers three independent analytics layers that exceed what any com
 
 **Advantage over commercial platforms:** Mailchimp, Constant Contact and Klaviyo track only what happens inside the email (opens and link clicks). This system additionally captures full reader behaviour on the newsletter page, providing a complete picture from email open through to action taken.
 
-### Performance (as of May 2026)
+### Performance (as of November 2026)
 
 | Metric | Value |
 |---|---|
 | Subscribers | ~9,000 |
-| Campaigns sent | 27 |
+| Campaigns sent | 27+ |
 | Typical delivery rate | 99%+ |
 | Open rate | 40–49% (industry average: 20–25%) |
-| Bounce rate | 0% across manually reviewed campaigns* |
-
-*Bounce notification routing from SES back into Mailster is not yet automated. Bounces are currently monitored manually via the SES console and acted on by hand. Automatic suppression via SES → SNS → WordPress webhook → Mailster API is a planned improvement.
+| Bounce handling | Fully automated via SES → SNS → Mailster |
+| Complaint handling | Fully automated via SES → SNS → Mailster |
 
 ---
 
@@ -150,6 +177,15 @@ This system delivers three independent analytics layers that exceed what any com
 
 **Solution:** Created a dedicated IAM user with `AmazonSESFullAccess` policy. Confirmed DKIM verification in SES console before testing. Waited 24 hours for DNS propagation before retesting.
 
+### SNS Notification Field Mismatch
+**Challenge:** The mailster-amazonses plugin silently failed to process bounce and complaint notifications. SES Configuration Set event destinations send `eventType` in the SNS message body, but the plugin only checked for `notificationType` (the older direct SES identity notification format).
+
+**Solution:** Updated `amazonses.class.php` line 640 to check `notificationType` first and fall back to `eventType`:
+```php
+switch ( isset( $message->notificationType ) ? $message->notificationType : $message->eventType ) {
+```
+Also confirmed that SNS subscriptions must have Raw message delivery disabled, so the SNS envelope (including the `Type: Notification` wrapper) is preserved for the plugin to parse correctly.
+
 ---
 
 ## Best Practices Implemented
@@ -159,14 +195,15 @@ This system delivers three independent analytics layers that exceed what any com
 - IAM user with minimal required permissions, scoped to `AmazonSESFullAccess` only
 - Google MX records preserved, so regular inbox email is unaffected by SES configuration
 - Unsubscribe links in every campaign, ensuring GDPR and CAN-SPAM compliance
+- Automated bounce and complaint suppression via SES → SNS → Mailster, protecting sender reputation
+- Hardbounced and unsubscribed addresses retained in Mailster for GDPR audit trail and to prevent re-sending
 - CSV subscriber upload with opt-in verification, with no cold or purchased lists
-- Regular list cleaning based on engagement metrics recommended
+- SES suppression list synced to Mailster on initial setup
 
 ---
 
 ## Outstanding Issues
 
-- **Bounce routing not automated** — SES bounce notifications are not yet automatically fed back into Mailster. Planned fix: SES → SNS Topic → HTTP endpoint on mambocity.co.uk → Mailster API
 - **DMARC policy** — currently `p=none` (monitoring only). To be tightened to `p=quarantine` once deliverability is consistently strong over several months
 
 ---
@@ -174,7 +211,9 @@ This system delivers three independent analytics layers that exceed what any com
 ## Resources
 
 - [Mailster Plugin](https://codecanyon.net/item/mailster-email-newsletter-plugin-for-wordpress/3078294)
+- [mailster-amazonses Add-on](https://mailster.co/add-ons/amazon-ses/)
 - [Amazon SES Documentation](https://docs.aws.amazon.com/ses/latest/dg/)
+- [Amazon SNS Documentation](https://docs.aws.amazon.com/sns/latest/dg/)
 - [SiteGround DNS Management](https://www.siteground.com/kb/how_to_manage_dns_records/)
 
 ---
