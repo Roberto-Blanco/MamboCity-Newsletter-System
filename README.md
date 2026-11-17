@@ -2,10 +2,10 @@
 
 This project documents how I set up a cost-effective, high-deliverability newsletter system for [MamboCity London](https://mambocity.co.uk) using:
 
-- ✅ [Mailster](https://mailster.co/) for newsletter creation and subscriber management
-- ✅ [Amazon SES](https://aws.amazon.com/ses/) for reliable bulk email sending at near-zero cost
-- ✅ [mailster-amazonses](https://github.com/EverPress/mailster-amazonses) for automated bounce and complaint handling via SNS
-- ✅ Google Analytics via MonsterInsights for full reader behaviour tracking beyond the email
+- [Mailster](https://mailster.co/) for newsletter creation and subscriber management
+- [Amazon SES](https://aws.amazon.com/ses/) for reliable bulk email sending at near-zero cost
+- [mailster-amazonses](https://github.com/EverPress/mailster-amazonses) for automated bounce and complaint handling via SNS
+- Google Analytics via MonsterInsights for full reader behaviour tracking beyond the email
 
 The solution sends approximately monthly campaigns to ~9,000 opted-in subscribers directly from WordPress, with automated bounce and complaint handling and three independent analytics layers that outperform any commercial email platform.
 
@@ -47,8 +47,8 @@ Mailster connects directly to Amazon SES via IAM credentials. Bounce and complai
 - WordPress (self-hosted via SiteGround)
 - Mailster (premium plugin, $199 one-off licence)
 - mailster-amazonses v3.0.0 (EverPress add-on for SNS bounce/complaint handling)
-- Amazon Simple Email Service (SES) — eu-west-2 (London)
-- Amazon SNS — ses-bounce-v2 and ses-complaint-v2 topics
+- Amazon Simple Email Service (SES): eu-west-2 (London)
+- Amazon SNS: ses-bounce-v2 and ses-complaint-v2 topics
 - Google Workspace (regular inbox email, preserved alongside SES)
 - DNS and hosting managed via SiteGround
 
@@ -63,10 +63,10 @@ Mailster connects directly to Amazon SES via IAM credentials. Bounce and complai
 - **Email hosting**: Google Workspace
 - **SES domain verification**: Completed in AWS console
 - **DNS records added on SiteGround**:
-  - ✅ SPF: `v=spf1 include:_spf.google.com include:amazonses.com ~all`
-  - ✅ DKIM: 3x CNAME records provided by SES, all verified
-  - ✅ DMARC: `v=DMARC1; p=none; aspf=r; adkim=r;`
-  - ✅ MAIL FROM: `mail.mambocity.co.uk` (subdomain, preserves Google MX on root domain)
+  - SPF: `v=spf1 include:_spf.google.com include:amazonses.com ~all`
+  - DKIM: 3x CNAME records provided by SES, all verified
+  - DMARC: `v=DMARC1; p=none; pct=100; rua=mailto:re+mc5ppzgl1sh@dmarc.postmarkapp.com; sp=none; aspf=r; adkim=r;`
+  - MAIL FROM: `mail.mambocity.co.uk` (subdomain, preserves Google MX on root domain)
 - Google MX records preserved for regular inbox use alongside SES
 
 ### 2. Mailster Configuration & SES Integration
@@ -101,8 +101,8 @@ SES bounce and complaint notifications are automatically routed back into Mailst
 
 **What happens automatically:**
 
-- **Hard bounce** — subscriber status set to Hardbounced; address suppressed from future sends
-- **Spam complaint** — subscriber unsubscribed from all lists
+- **Hard bounce**: subscriber status set to Hardbounced; address suppressed from future sends
+- **Spam complaint**: subscriber unsubscribed from all lists
 
 **Root cause resolved:** The mailster-amazonses plugin originally checked only for `notificationType` in the SNS message body, which is the field used by older SES identity-level notifications. SES Configuration Set event destinations send `eventType` instead. The plugin's `handle_sns()` method was updated to check `notificationType` first and fall back to `eventType`:
 
@@ -117,8 +117,8 @@ switch ( isset( $message->notificationType ) ? $message->notificationType : $mes
 - Internal test campaign created and sent via Mailster
 - Delivery, formatting and unsubscribe links confirmed working
 - Open and click tracking confirmed active in Mailster analytics
-- Bounce handling tested using SES simulator address (bounce@simulator.amazonses.com) — subscriber automatically set to Hardbounced
-- Complaint handling confirmed via activity log — subscriber automatically unsubscribed
+- Bounce handling tested using SES simulator address (bounce@simulator.amazonses.com): subscriber automatically set to Hardbounced
+- Complaint handling confirmed via activity log: subscriber automatically unsubscribed
 - Scaled up to full list send after successful tests
 
 ---
@@ -127,10 +127,10 @@ switch ( isset( $message->notificationType ) ? $message->notificationType : $mes
 
 Campaigns use a deliberate two-stage approach that separates content delivery from email delivery.
 
-**Stage 1 — Full newsletter as a WordPress page**
+**Stage 1: Full newsletter as a WordPress page**
 The complete newsletter is built as a dedicated page on mambocity.co.uk. Because it is a standard WordPress page, it is automatically tracked by Google Analytics via MonsterInsights, capturing page views, scroll depth, time on page and outbound link clicks. The page remains editable after the email has been sent.
 
-**Stage 2 — Teaser email via Mailster**
+**Stage 2: Teaser email via Mailster**
 A shorter teaser campaign is sent to the full subscriber list via SES, containing a brief editorial intro and a link to the full WordPress page. Mailster tracks opens and clicks on the teaser; Google Analytics tracks reader behaviour on the page itself.
 
 ---
@@ -141,9 +141,9 @@ This system delivers three independent analytics layers that exceed what any com
 
 | Layer | Tool | Data captured |
 |---|---|---|
-| 1 | Mailster | Opens, clicks, unsubscribes, bounces — per campaign |
+| 1 | Mailster | Opens, clicks, unsubscribes, bounces (per campaign) |
 | 2 | Google Analytics (MonsterInsights) | Page views, scroll depth, time on page, outbound link clicks |
-| 3 | Amazon SES console | Delivery rate, bounce rate, complaint rate — infrastructure level |
+| 3 | Amazon SES console | Delivery rate, bounce rate, complaint rate (infrastructure level) |
 
 **Advantage over commercial platforms:** Mailchimp, Constant Contact and Klaviyo track only what happens inside the email (opens and link clicks). This system additionally captures full reader behaviour on the newsletter page, providing a complete picture from email open through to action taken.
 
@@ -204,7 +204,7 @@ Also confirmed that SNS subscriptions must have Raw message delivery disabled, s
 
 ## Outstanding Issues
 
-- **DMARC policy** — currently `p=none` (monitoring only). To be tightened to `p=quarantine` once deliverability is consistently strong over several months
+- **DMARC policy**: currently `p=none` (monitoring only). To be tightened to `p=quarantine` once deliverability is consistently strong over several months
 
 ---
 
@@ -226,11 +226,11 @@ MIT License
 
 ## Author
 
-**Robert White** — Co-Director, MamboCity London
+**Robert White**, Co-Director, MamboCity London
 
-- 🌐 [mambocity.co.uk](https://mambocity.co.uk)
-- 💼 [LinkedIn](https://www.linkedin.com/in/robert-r-white-00252738/)
-- 🐙 [GitHub](https://github.com/Roberto-Blanco)
+- [mambocity.co.uk](https://mambocity.co.uk)
+- [LinkedIn](https://www.linkedin.com/in/robert-r-white-00252738/)
+- [GitHub](https://github.com/Roberto-Blanco)
 
 ---
 
