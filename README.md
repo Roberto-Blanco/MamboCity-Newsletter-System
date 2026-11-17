@@ -192,7 +192,7 @@ Also confirmed that SNS subscriptions must have Raw message delivery disabled, s
 
 - SPF, DKIM and DMARC all configured, protecting domain reputation and improving deliverability
 - Dedicated MAIL FROM subdomain, separating transactional sending reputation from the main domain
-- IAM user with minimal required permissions, scoped to `AmazonSESFullAccess` only
+- Dedicated IAM user for SES sending, with tighter least-privilege permissions planned
 - Google MX records preserved, so regular inbox email is unaffected by SES configuration
 - Unsubscribe links in every campaign, ensuring GDPR and CAN-SPAM compliance
 - Automated bounce and complaint suppression via SES → SNS → Mailster, protecting sender reputation
@@ -205,6 +205,7 @@ Also confirmed that SNS subscriptions must have Raw message delivery disabled, s
 ## Outstanding Issues
 
 - **DMARC policy**: currently `p=none` (monitoring only). To be tightened to `p=quarantine` once deliverability is consistently strong over several months
+- **IAM permissions**: IAM user currently uses `AmazonSESFullAccess`. To be replaced with a least-privilege custom policy scoped to sending only
 
 ---
 
